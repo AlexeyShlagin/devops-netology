@@ -1,0 +1,151 @@
+## Ответы к заданию "3.3. Операционные системы. Лекция 1"
+
+#### 1. Какой системный вызов делает команда cd? <br>
+`strace  3>&1 1>&2 2>&3  /bin/bash -c 'cd /tmp' | grep "cd"`
+
+
+#### 2. Попробуйте использовать команду file на объекты разных типов в файловой системе.
+Используя strace выясните, где находится база данных file, на основании которой она делает свои догадки.
+`man file`
+
+```
+The information
+identifying these files is read from /etc/magic and the compiled magic file /usr/share/misc/magic.mgc, or the
+files in the directory /usr/share/misc/magic if the compiled file does not exist.
+```
+
+```
+vagrant@ubuntu-test:~$ strace  3>&1 1>&2 2>&3 file | grep 'magic'
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libmagic.so.1", O_RDONLY|O_CLOEXEC) = 4
+stat("/home/vagrant/.magic.mgc", 0x7ffe0db43d80) = -1 ENOENT (No such file or directory)
+stat("/home/vagrant/.magic", 0x7ffe0db43d80) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/etc/magic.mgc", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat("/etc/magic", {st_mode=S_IFREG|0644, st_size=111, ...}) = 0
+openat(AT_FDCWD, "/etc/magic", O_RDONLY) = 4
+openat(AT_FDCWD, "/usr/share/misc/magic.mgc", O_RDONLY) = 4
+            [-m <magicfiles>] [-P <parameter=value>] <file> ...
+       file -C [-m <magicfiles>]
+```
+
+
+#### 3. Предположим, приложение пишет лог в текстовый файл. Этот файл оказался удален (deleted в lsof), однако возможности сигналом сказать приложению переоткрыть файлы или просто перезапустить приложение – нет. Так как приложение продолжает писать в удаленный файл, место на диске постепенно заканчивается. Основываясь на знаниях о перенаправлении потоков предложите способ обнуления открытого удаленного файла (чтобы освободить место на файловой системе).
+
+Нужно перенаправить стандартный поток ввода вывода, направить на его ввод пустую строку в нужный нам файл. Т.е. делаем "эхо" ничего в этот файл.
+echo '' > file.log
+
+#### 4. Занимают ли зомби-процессы какие-то ресурсы в ОС (CPU, RAM, IO)?
+Ресурсы зомби процессы не занимают, просто висят в списке процессов.
+
+#### 5. В iovisor BCC есть утилита opensnoop:
+
+root@vagrant:~# dpkg -L bpfcc-tools | grep sbin/opensnoop
+/usr/sbin/opensnoop-bpfcc
+
+На какие файлы вы увидели вызовы группы open за первую секунду работы утилиты? Воспользуйтесь пакетом bpfcc-tools для Ubuntu 20.04.
+
+```
+vagrant@ubuntu-test:~$ sudo opensnoop-bpfcc
+PID    COMM               FD ERR PATH
+1268   vminfo              6   0 /var/run/utmp
+624    dbus-daemon        -1   2 /usr/local/share/dbus-1/system-services
+624    dbus-daemon        19   0 /usr/share/dbus-1/system-services
+624    dbus-daemon        -1   2 /lib/dbus-1/system-services
+624    dbus-daemon        19   0 /var/lib/snapd/dbus-1/system-services/
+385    systemd-udevd      14   0 /sys/fs/cgroup/unified/system.slice/systemd-udevd.service/cgroup.procs
+385    systemd-udevd      14   0 /sys/fs/cgroup/unified/system.slice/systemd-udevd.service/cgroup.threads
+1268   vminfo              6   0 /var/run/utmp
+624    dbus-daemon        -1   2 /usr/local/share/dbus-1/system-services
+624    dbus-daemon        19   0 /usr/share/dbus-1/system-services
+624    dbus-daemon        -1   2 /lib/dbus-1/system-services
+624    dbus-daemon        19   0 /var/lib/snapd/dbus-1/system-services/
+1268   vminfo              6   0 /var/run/utmp
+624    dbus-daemon        -1   2 /usr/local/share/dbus-1/system-services
+624    dbus-daemon        19   0 /usr/share/dbus-1/system-services
+```
+
+#### 6. Какой системный вызов использует uname -a? Приведите цитату из man по этому системному вызову, где описывается альтернативное местоположение в /proc, где можно узнать версию ядра и релиз ОС.
+
+Это правильный системный вызов? <br>
+
+```
+vagrant@ubuntu-test:~$ strace 3>&1 1>&2 2>&3 uname -a | grep uname
+execve("/usr/bin/uname", ["uname", "-a"], 0x7ffd5ab6cf38 /* 26 vars */) = 0
+```
+
+Если да - мне нужно в этом manual найти информацию?
+`man 2 execve`
+
+
+#### 7. Чем отличается последовательность команд через ; и через && в bash?
+`;` используется для выполнения команд по очереди <br>
+`&&` если первая команда выполнена успешно, т.e. "returned zero exit status.", то после будет выполенена вторая команда. <br><br>
+
+Есть ли смысл использовать в bash &&, если применить set -e?
+`set --help` говорит нам, что <br>
+"-e  Exit immediately if a command exits with a non-zero status." Т.е. если при выполнении скрипта есть ошибка - работа скрипта остановится.
+
+Я так понимаю что разница между `set -e` и `&&` в том, что первое остановит работу всего скрипта, а второе не выполнит следующее действие, и работа скрипта будет продолжена.
+
+
+#### 8. Из каких опций состоит режим bash set -euxo pipefail и почему его хорошо было бы использовать в сценариях?
+
+`-e  Exit immediately if a command exits with a non-zero status.`
+`-u  Treat unset variables as an error when substituting.`
+`-x  Print commands and their arguments as they are executed.`
+`pipefail the return value of a pipeline is the status of the last command to exit with a non-zero status,or zero if no command exited with a non-zero status`
+
+Я так понимаю, что это некий режим отладки.<br>
+Если есть ошибка - останавливаем работу скрипта. <br>
+Неустановленные переменные - считаютя ошибкой. <br>
+Выводить на экран значения аргументов по мере их выполнения <br>
+Если скрипт завершился ошибкой - вывести последнее значения pipeline.
+
+
+
+#### 9. Используя -o stat для ps, определите, какой наиболее часто встречающийся статус у процессов в системе. В man ps ознакомьтесь (/PROCESS STATE CODES) что значат дополнительные к основной заглавной буквы статуса процессов. Его можно не учитывать при расчете (считать S, Ss или Ssl равнозначными).
+
+```
+vagrant@ubuntu-test:~$ ps axo stat | grep -c S
+71
+```
+
+```
+vagrant@ubuntu-test:~$ ps axo stat | grep -c Ss
+29
+```
+
+```
+vagrant@ubuntu-test:~$ ps axo stat | grep -c Ssl
+8
+```
+т.е. если считать S, Ss, Ssl равнозначными, то всего процессов 108.
+
+вопрос, можно ли через какой нибудь оператор сразу считать все процессы, что то вроде 
+`ps axo stat | grep -c Ssl || Ss || Ssl`
+?
+
+PROCESS STATE CODES говорит нам, что 
+`S    interruptible sleep (waiting for an event to complete)`
+
+Визуально в списоке больше всего этих процессов, т.е. больше всего процессов которые ожидают события для выполнения.
+
+```
+vagrant@ubuntu-test:~$ ps o stat
+STAT
+Ss
+Ss
+Ss
+Ss
+Ss
+S+
+R+
+```
+
+как вывести наиболее часто встречающийся статус?
+или команда выше как раз выводит этот статус?
+
+
+
+
+
+
