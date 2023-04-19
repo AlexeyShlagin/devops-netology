@@ -17,4 +17,5 @@ override.tf.json
 3. Файлы CLI configuration
 .terraformrc
 terraform.rc
-~
+
+4.~
