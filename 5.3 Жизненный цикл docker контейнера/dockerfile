@@ -1,0 +1,19 @@
+# Базовый образ Ubuntu
+FROM centos:7
+
+# Необходимые пакеты и Ansible
+RUN yum install -y epel-release && \
+    yum install -y ansible
+
+# Директория для рабочего окружения Ansible
+RUN mkdir -p /ansible
+
+# Устанавливаем рабоучю директорию
+WORKDIR /ansible
+
+# Копируем файлы Ansible в контейнер
+COPY playbook.yml /ansible/playbook.yml
+COPY ansible.cfg /etc/ansible/ansible.cfg
+
+# Запускаем оболчку при запуске контейнера
+CMD ["/bin/bash"]
