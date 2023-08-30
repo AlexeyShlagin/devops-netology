@@ -254,7 +254,7 @@ postgres=# \l
  test_db   | postgres | UTF8     | en_US.utf8 | en_US.utf8 |
 (6 rows)
 
-```---###Вопрос:
+```---### Вопрос:
 Почему у меня не получается поднять 2 докер контейнера с postgres с помощью docker-compose?Изначально работающих контейнеров нет:
 ```
 root@sysadm-fs2:/home/vagrant/netology/6.2# docker ps
