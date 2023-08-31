@@ -352,4 +352,58 @@ root@sysadm-fs2:/home/vagrant/netology/6.2# docker ps
 CONTAINER ID   IMAGE         COMMAND                  CREATED          STATUS          PORTS                                       NAMES
 f3a05202ca85   postgres:12   "docker-entrypoint.s…"   11 seconds ago   Up 10 seconds   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   postgres_instance_2
 
-```Подскажите, что я делаю неправильно?---### Как cдавать заданиеВыполненное домашнее задание пришлите ссылкой на .md-файл в вашем репозитории.---
+```Подскажите, что я делаю неправильно?---
+### UPDATE
+
+Разорбался, в моих конфигурационных файлах была ошибка связанная с одинаковым именем сервиса `posgres`.
+
+Ниже указан конфигурационный файл для поднятия 2-х контейнеров posgres:
+
+```
+version: '3'
+
+services:
+  postgres:
+    image: postgres:12
+    container_name: postgres_instance
+    environment:
+      POSTGRES_DB: netology
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+    volumes:
+      - postgres_bups:/backups
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  postgres2:
+    image: postgres:12
+    container_name: postgres_instance2
+    environment:
+      POSTGRES_DB: netology
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+    volumes:
+      - postgres_bups2:/backups
+      - postgres_data2:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+
+volumes:
+  postgres_bups:
+    driver: local
+    name: 6.2_postgres_bups
+  postgres_data:
+    driver: local
+    name: 6.2_postgres_data
+
+  postgres_bups2:
+    driver: local
+    name: 6.2_postgres_bups
+  postgres_data2:
+    driver: local
+    name: 6.2_postgres_data
+
+docker-compose3.yml (END)
+```---### Как cдавать заданиеВыполненное домашнее задание пришлите ссылкой на .md-файл в вашем репозитории.---
