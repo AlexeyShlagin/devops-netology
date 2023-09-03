@@ -139,7 +139,7 @@ resource "docker_container" "nginx" {
   name  = "example_${random_password.random_string.result}"
   ```
 
-Команда `terraform apply -auto-approve`` в Terraform выполняет применение вашей инфраструктуры без запроса подтверждения. Это означает, что Terraform выполнит изменения, описанные в конфигурации инфраструктуры, без предварительного запроса. В случае ошибки, неправильного описания и т.д. - все изменения будут применены.
+Команда `terraform apply -auto-approve` в Terraform выполняет применение вашей инфраструктуры без запроса подтверждения. Это означает, что Terraform выполнит изменения, описанные в конфигурации инфраструктуры, без предварительного запроса. В случае ошибки, неправильного описания и т.д. - все изменения будут применены.
 
 ```
 ➜  7.1 Введение в Terraform git:(main) ✗ docker ps                    
@@ -149,9 +149,6 @@ CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS   
 
 #### 8. Уничтожьте созданные ресурсы с помощью **terraform**. Убедитесь, что все ресурсы удалены. Приложите содержимое файла **terraform.tfstate**. 
 
-
-
-#### 9. Объясните, почему при этом не был удалён docker-образ **nginx:latest**. Ответ подкрепите выдержкой из документации [**terraform провайдера docker**](https://docs.comcloud.xyz/providers/kreuzwerker/docker/latest/docs).  
 ```
 terraform destroy
 ```
@@ -168,6 +165,13 @@ terraform destroy
   "check_results": null
 }
 ```
+
+#### 9. Объясните, почему при этом не был удалён docker-образ **nginx:latest**. Ответ подкрепите выдержкой из документации [**terraform провайдера docker**](https://docs.comcloud.xyz/providers/kreuzwerker/docker/latest/docs).  
+
+При выполнении команды terraform destroy Terraform удаляет ресурсы, которые были созданы и управляются через Terraform конфигурации. Это включает в себя удаление виртуальных машин, сетевых правил, баз данных и других ресурсов, определенных в Terraform файле.
+Docker-образы, в том числе nginx:latest, не управляются Terraform напрямую.
+
+В документации указано, что "The Docker provider is used to interact with Docker containers and images. It uses the Docker API to manage the lifecycle of Docker containers. ", т.к. удаление docker images выполняется через docker.
 ------
 
 ## Дополнительное задание (со звёздочкой*)
