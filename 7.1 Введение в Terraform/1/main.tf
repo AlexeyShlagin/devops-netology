@@ -36,3 +36,4 @@ resource "docker_container" "nginx" {
   }
 }
 
+

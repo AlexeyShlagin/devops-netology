@@ -168,10 +168,8 @@ terraform destroy
 
 #### 9. Объясните, почему при этом не был удалён docker-образ **nginx:latest**. Ответ подкрепите выдержкой из документации [**terraform провайдера docker**](https://docs.comcloud.xyz/providers/kreuzwerker/docker/latest/docs).
 
-При выполнении команды terraform destroy Terraform удаляет ресурсы, которые были созданы и управляются через Terraform конфигурации. Это включает в себя удаление виртуальных машин, сетевых правил, баз данных и других ресурсов, определенных в Terraform файле.
-Docker-образы, в том числе nginx:latest, не управляются Terraform напрямую.
-В документации указано, что "The Docker provider is used to interact with Docker containers and images. It uses the Docker API to manage the lifecycle of Docker containers. ", т.к. удаление docker images выполняется через docker.
-
+Потому что был указан параметр `keep_locally = true`. <br>
+If true, then the Docker image won't be deleted on destroy operation. If this is false, it will delete the image from the docker local storage on destroy operation.
 
 ## Дополнительное задание (со звёздочкой*)
 
