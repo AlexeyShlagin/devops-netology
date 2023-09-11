@@ -21,7 +21,7 @@ output "main_and_replica" {
   ]
 
 }
-
+/*
 output "storage" {
   value = [
     for vm in yandex_compute_instance.storage :
@@ -33,4 +33,4 @@ output "storage" {
   ]
 
 }
-
+*/
