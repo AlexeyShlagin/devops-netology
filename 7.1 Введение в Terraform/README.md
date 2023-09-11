@@ -183,15 +183,15 @@ shekeriev.
 В качестве ответа приложите plan для создаваемого ресурса и скриншот созданного в VB ресурса. 
 
 файл `main.tf`
-```
+
+```bash
 terraform {
   required_providers {
     virtualbox = {
-      source = "shekeriev/virtualbox"
+      source  = "shekeriev/virtualbox"
       version = "0.0.4"
     }
   }
-  required_version = ">=0.13" 
 }
 
 provider "virtualbox" {
@@ -200,23 +200,21 @@ provider "virtualbox" {
 }
 
 resource "virtualbox_vm" "vm1" {
-  name   = "centos-7"
-  image  = "https://github.com/holms/vagrant-centos7-box/releases/download/7.1.1503.001/CentOS-7.1.1503-x86_64-netboot.box"
-  cpus      = 1
-  memory    = "512 mib"
+  name   = "debian-11"
+  image  = "https://app.vagrantup.com/shekeriev/boxes/debian-11/versions/0.2/providers/virtualbox.box"
+  cpus   = 1
+  memory = "512 mib"
 
 
   network_adapter {
-    type           = "hostonly"
+    type           = "nat"
     device         = "IntelPro1000MTDesktop"
     host_interface = "vboxnet1"
   }
 }
 
-
 ```
-
-```
+```bash
 2 git:(main) ✗ terraform plan
 
 Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
@@ -228,9 +226,9 @@ Terraform will perform the following actions:
   + resource "virtualbox_vm" "vm1" {
       + cpus   = 1
       + id     = (known after apply)
-      + image  = "https://github.com/holms/vagrant-centos7-box/releases/download/7.1.1503.001/CentOS-7.1.1503-x86_64-netboot.box"
+      + image  = "https://app.vagrantup.com/shekeriev/boxes/debian-11/versions/0.2/providers/virtualbox.box"
       + memory = "512 mib"
-      + name   = "centos-7"
+      + name   = "debian-11"
       + status = "running"
 
       + network_adapter {
@@ -240,48 +238,11 @@ Terraform will perform the following actions:
           + ipv4_address_available = (known after apply)
           + mac_address            = (known after apply)
           + status                 = (known after apply)
-          + type                   = "hostonly"
+          + type                   = "nat"
         }
     }
 
 Plan: 1 to add, 0 to change, 0 to destroy.
-
-Changes to Outputs:
-  + IPAddress = (known after apply)
-  ```
-
-Запустить не получилось: 
-```
-virtualbox_vm.vm1: Creating...
-virtualbox_vm.vm1: Still creating... [10s elapsed]
-virtualbox_vm.vm1: Still creating... [20s elapsed]
-╷
-│ Error: can't create virtualbox VM centos-7: machine already exists
-│ 
-│   with virtualbox_vm.vm1,
-│   on main.tf line 16, in resource "virtualbox_vm" "vm1":
-│   16: resource "virtualbox_vm" "vm1" {
-│ 
-╵
 ```
 
-Пробую удалить, получаю: 
-```
-➜  2 git:(main) ✗ terraform destroy
-No changes. No objects need to be destroyed.
-Either you have not created any objects yet or the existing objects were already deleted outside of Terraform.
-Destroy complete! Resources: 0 destroyed.
-```
-
-Vagrant global-status показывает другую, старую виртуальную машину. Новой виртуальной машины, которая `can't create virtualbox VM centos-7: machine already exists` - нет.
-```
-➜  2 git:(main) ✗ vagrant global-status 
-id       name    provider   state   directory                                 
-------------------------------------------------------------------------------
-6eef3c0  default virtualbox running /Users/shlagin/Documents/vagrant_config/4 
- 
-The above shows information about all known Vagrant environments
-```
-Подскажите пожалуйста, что я делаю неправильно.
-Почему при создании идет ошибка с тем, что VM centos-7 уже существует
-Как найти, где эта виртаулка создалась?
+![](img/2.png)
