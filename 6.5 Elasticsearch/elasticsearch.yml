@@ -1,0 +1,5 @@
+node:
+  name: netology_test
+path:
+  data: /var/lib/data
+xpack.ml.enabled: false

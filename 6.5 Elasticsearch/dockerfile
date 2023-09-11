@@ -1,0 +1,38 @@
+# Используем образ CentOS в качестве базового образа
+FROM centos:7
+
+# Обновляем пакеты и устанавливаем необходимые зависимости
+RUN yum -y update && \
+    yum -y install wget perl-Digest-SHA &&
+
+# Создаем пользователя и группу elasticsearch
+RUN useradd elasticsearch && \
+    groupadd elasticsearch
+
+# Скачиваем и устанавливаем Elasticsearch
+RUN cd /opt && \
+    wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.9.2-linux-x86_64.tar.gz && \
+    wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.9.2-linux-x86_64.tar.gz.sha512 && \
+    shasum -a 512 -c elasticsearch-8.9.2-linux-x86_64.tar.gz.sha512 && \
+    tar -xzf elasticsearch-8.9.2-linux-x86_64.tar.gz && \
+    rm elasticsearch-8.9.2-linux-x86_64.tar.gz elasticsearch-8.9.2-linux-x86_64.tar.gz.sha512 && \
+    mkdir /var/lib/data && chmod -R 777 /var/lib/data && \
+    chown -R elasticsearch:elasticsearch /opt/elasticsearch-8.9.2 && \
+    yum clean all
+
+# Используем пользователя elasticsearch при запуске контейнера
+USER elasticsearch
+
+# Рабочая дирекория
+WORKDIR /opt/elasticsearch-8.2.0/
+
+# Копируем файл конфигурации
+COPY elasticsearch.yml config/
+
+# Порты 
+EXPOSE 9200 9300
+
+# Точка входа
+ENTRYPOINT ["bin/elasticsearch"]
+
+
