@@ -280,29 +280,26 @@ resource "yandex_compute_instance" "platform" {
 
 #### 2. Также поступите с блоком **metadata {serial-port-enable, ssh-keys}**, эта переменная должна быть общая для всех ваших ВМ.
 
-Вот тут не понятно. Я создаю:
-
+создаем переменную
 ```bash
 variable "metadata_for_all" {
   type = map(any)
   default = {
     serial-port-enable = 1
-  }
-}
-```
+    ssh-key            = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCb4ssWoeHjVHZPP/8Qomg+A+XewJuMsTTRakRzYvVTApKALpY0ktn1YOQG6/ff5oH8Jt14/NMLWl+O96L8DkNmdafyl0bYQvk5fxtz3hfCYOYEu4RhvkkQB29X3cEXJAq1PTo5AqgVrFoz76DzuKZYzRvbpPRK8koOm9MsYuQDEwAHpoU2Q7gG47Ede/UOi0uYLm0/frbOEjH9MPdnl+Ut84is3U+NQFAkIQTudy+w9nNNtyF9B+kUaOzn6E4GpEVHVVDjJLfhhMCQj+BTMtZ1WTkVqvg9K6+kY8eUuCPPfaVOcsVIhoOsavNGC50Zm0XFalp...."
 
-в `main.tf` значение `ssh-keys` - это уже переменная. 
+  }
+  ```
+
+используем ее в main.tf
+
 ```bash
-  metadata = {
+metadata = {
     serial-port-enable = var.metadata_for_all["serial-port-enable"]
-    ssh-keys           = "ubuntu:${var.vms_ssh_root_key}"
+    ssh-keys           = var.metadata_for_all["ssh-key"]
+    # ssh-keys           = "ubuntu:${var.vms_ssh_root_key}"
   }
 ```
-
-Зачем `ssh-keys` переносить в другую переменную? 
-Но все же если попытаться это сделать - будет ошибка, использовать переменную внутри переменной нельзя.
-
-Не понимаю что тут нужно сделать. Что имеется ввиду под "эта переменная должна быть общая для всех ваших ВМ"
 
 #### 3. Найдите и удалите все более не используемые переменные проекта.
 
