@@ -75,7 +75,7 @@ variable "metadata_for_all" {
   type = map(any)
   default = {
     serial-port-enable = 1
-    ssh-key            = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCb4ssWoeHjVHZPP/8Qomg+A+XewJuMsTTRakRzYvVTApKALpY0ktn1YOQG6/ff5oH8Jt14/NMLWl+O96L8DkNmdafyl0bYQvk5fxtz3hfCYOYEu4RhvkkQB29X3cEXJAq1PTo5AqgVrFoz76DzuKZYzRvbpPRK8koOm9MsYuQDEwAHpoU2Q7gG47Ede/UOi0uYLm0/frbOEjH9MPdnl+Ut84is3U+NQFAkIQTudy+w9nNNtyF9B+kUaOzn6E4GpEVHVVDjJLfhhMCQj+BTMtZ1WTkVqvg9K6+kY8eUuCPPfaVOcsVIhoOsavNGC50Zm0XFalpPs3Hkq9PpmXod80+u9gxRkFBWA0XSlckUk9ZZe5apzxRSuILOCC/x/G6gLAY1iF96bsicRqxaMS4SfX3lYt9CDXTdot62zEGnc42ST0WmsUbuf5skPLSEWNC4UZ2IGEhQfmvYyALMwPLpSoQYCIffDk62HLmt0+bf1L77dfcU7lba8IXLUj3rv+iHLyU= pubman@macbookpro.local"
+    ssh-key            = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCb4ssWoeHjVHZPP/8Qomg+A+XewJuMsTTRakRzYvVTApKALpY0ktn1YOQG6/ff5oH8...."
 
   }
 }
