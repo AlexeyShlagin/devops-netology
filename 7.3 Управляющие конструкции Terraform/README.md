@@ -281,26 +281,194 @@ terraform apply
 
 #### 2. Инвентарь должен содержать 3 группы [webservers], [databases], [storage] и быть динамическим, т. е. обработать как группу из 2-х ВМ, так и 999 ВМ.
 
-Вот тут мало что понятно. <br>
-
-Я копирую кусок кода из проекта с демонстрацией. Теперь файл main.tf выглядит так:
+`ansible.tf`
 
 ```bash
-resource "yandex_vpc_network" "develop" {
-  name = var.vpc_name
+resource "local_file" "hosts_cfg" {
+  content = templatefile("${path.module}/hosts.tftpl",
+    {
+      webservers = yandex_compute_instance.platform
+      databases  = yandex_compute_instance.vm
+      storage    = [yandex_compute_instance.storage]
+    }
+  )
+  filename = "${abspath(path.module)}/hosts.cfg"
 }
-resource "yandex_vpc_subnet" "develop" {
-  name           = var.vpc_name
-  zone           = var.default_zone
-  network_id     = yandex_vpc_network.develop.id
-  v4_cidr_blocks = var.default_cidr
+```
+
+##### Вопрос. Почему параметр `storage` нужно заключать в [] скобки? Если не включать - идет ошибка:
+
+```bash
+│ Error: Error in function call
+│ 
+│   on ansible.tf line 2, in resource "local_file" "hosts_cfg":
+│    2:   content = templatefile("${path.module}/hosts.tftpl",
+│    3:     {
+│    4:       webservers = yandex_compute_instance.platform
+│    5:       databases  = yandex_compute_instance.vm
+│    6:       storage    = yandex_compute_instance.storage
+│    7:     }
+│    8:   )
+│     ├────────────────
+│     │ while calling templatefile(path, vars)
+│     │ path.module is "."
+│     │ yandex_compute_instance.platform is tuple with 2 elements
+│     │ yandex_compute_instance.storage is object with 27 attributes
+│     │ yandex_compute_instance.vm is object with 2 attributes
+│ 
+│ Call to function "templatefile" failed: ./hosts.tftpl:11,4-12: Attempt to index null value; This value is null, so it does not have any indices., and 53 other diagnostic(s).
+```
+По тексту ошибки - я не понимаю в чем дело. Происходит попытка индексации null значения. [] скобки вроде бы явно указывают на то, что это список. В чем тут дело? Почему без скобок не работает?
+
+`hosts.tftpl`
+
+```bash
+[webservers]
+
+%{~ for i in webservers ~}
+${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]} 
+
+%{~ endfor ~}
+
+[databases]
+
+%{~ for i in databases ~}
+${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]} 
+
+%{~ endfor ~}
+
+[storage]
+
+%{~ for i in storage ~}
+${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]} 
+
+%{~ endfor ~}
+```
+
+
+#### 3. Выполните код. Приложите скриншот получившегося файла. 
+
+созданный файл `hosts.cfg`
+
+```bash
+[webservers]
+web-1 ansible_host=62.84.116.94 
+web-2 ansible_host=51.250.13.209 
+
+[databases]
+main ansible_host=158.160.44.218 
+replica ansible_host=51.250.79.243 
+
+[storage]
+storage ansible_host=62.84.124.81 
+
+```
+
+------
+
+### Задание 5* (необязательное)
+#### 1. Напишите output, который отобразит все 5 созданных ВМ в виде списка словарей:
+``` 
+[
+ {
+  "name" = 'имя ВМ1'
+  "id"   = 'идентификатор ВМ1'
+  "fqdn" = 'Внутренний FQDN ВМ1'
+ },
+ {
+  "name" = 'имя ВМ2'
+  "id"   = 'идентификатор ВМ2'
+  "fqdn" = 'Внутренний FQDN ВМ2'
+ },
+ ....
+]
+```
+Приложите скриншот вывода команды ```terrafrom output```.
+
+файл `output.cfg`
+```bash
+locals {
+  all_servers = concat([for i in yandex_compute_instance.platform : i], [for i in yandex_compute_instance.vm : i], [yandex_compute_instance.storage])
 }
 
 
-# добавляем кусок кода с другого проекта
+output "all_vm" {
+  value = [
+    for i in local.all_servers :
+    {
+      "name" = i.name
+      "id"   = i.id
+      "fqdn" = i.network_interface[0].nat_ip_address
+    }
+  ]
 
+}
+```
+
+Тут опять же не понятно, почему `[yandex_compute_instance.storage]` нужно указывать в [] <br>
+Без них не рабоатет.  `¯\_(ツ)_/¯`
+
+
+```bash
+Outputs:
+
+all_vm = [
+  {
+    "fqdn" = "62.84.116.94"
+    "id" = "fhm85gkcgn0l5h350vis"
+    "name" = "web-1"
+  },
+  {
+    "fqdn" = "51.250.13.209"
+    "id" = "fhmtt6fg9nc4fpjvmn64"
+    "name" = "web-2"
+  },
+  {
+    "fqdn" = "158.160.44.218"
+    "id" = "fhmpmksu8nn2beup9kse"
+    "name" = "main"
+  },
+  {
+    "fqdn" = "51.250.79.243"
+    "id" = "fhm3r7ghlvi1unsejbnl"
+    "name" = "replica"
+  },
+  {
+    "fqdn" = "62.84.124.81"
+    "id" = "fhmk369n7mlbkau9f29i"
+    "name" = "storage"
+  },
+]
+```
+
+------
+
+### Задание 6* (необязательное)
+
+
+#### 1. Используя null_resource и local-exec, примените ansible-playbook к ВМ из ansible inventory-файла.
+Готовый код возьмите из демонстрации к лекции [**demonstration2**](https://github.com/netology-code/ter-homeworks/tree/main/demonstration2).
+
+
+в файл `ansible.tf` добавляем код, теперь файл выглядит так:
+
+```bash
+resource "local_file" "hosts_cfg" {
+  content = templatefile("${path.module}/hosts.tftpl",
+    {
+      webservers = yandex_compute_instance.platform
+      databases  = yandex_compute_instance.vm
+      storage    = [yandex_compute_instance.storage]
+    }
+  )
+  filename = "${abspath(path.module)}/hosts.cfg"
+}
+
+
+# код для задания №6
 resource "null_resource" "web_hosts_provision" {
-
+  #Ждем создания инстанса
+  #depends_on = [yandex_compute_instance.example]
 
   #Добавление ПРИВАТНОГО ssh ключа в ssh-agent
   provisioner "local-exec" {
@@ -325,198 +493,90 @@ resource "null_resource" "web_hosts_provision" {
     playbook_src_hash = file("${abspath(path.module)}/test.yml") # при изменении содержимого playbook файла
     ssh_public_key    = var.vms_ssh_root_key                     # при изменении переменной
   }
-
-}
-
-```
-
-После создаю `ansible_inventory_template.tpl`
-
-```bash
-[webservers]
-%{~ for i in webservers ~}
-${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]} 
-%{~ endfor ~}
-[databases]
-%{~ for i in databases ~}
-${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]} 
-%{~ endfor ~}
-[storage]
-%{~ for i in storage ~}
-${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]} 
-%{~ endfor ~}
-```
-
-Теперь нужно каким то образом "Передайте в него в качестве переменных группы виртуальных машин из задания 2.1, 2.2 и 3.2, т. е. 5 ВМ."
-
-Как это сделать?
-
-#### 3. Выполните код. Приложите скриншот получившегося файла. 
-
-Для общего зачёта создайте в вашем GitHub-репозитории новую ветку terraform-03. Закоммитьте в эту ветку свой финальный код проекта, пришлите ссылку на коммит.   
-**Удалите все созданные ресурсы**.
-
-------
-
-### Задание 5* (необязательное)
-#### 1. Напишите output, который отобразит все 5 созданных ВМ в виде списка словарей:
-``` 
-[
- {
-  "name" = 'имя ВМ1'
-  "id"   = 'идентификатор ВМ1'
-  "fqdn" = 'Внутренний FQDN ВМ1'
- },
- {
-  "name" = 'имя ВМ2'
-  "id"   = 'идентификатор ВМ2'
-  "fqdn" = 'Внутренний FQDN ВМ2'
- },
- ....
-]
-```
-Приложите скриншот вывода команды ```terrafrom output```.
-
-если код в `outouts.tf` такой:
-
-```bash
-output "web" {
-  value = [
-    for vm in yandex_compute_instance.platform :
-    {
-      "name" = vm.name
-      "id"   = vm.id
-      "fqdn" = vm.network_interface[0].nat_ip_address
-    }
-  ]
-
-}
-
-output "main_and_replica" {
-  value = [
-    for vm in yandex_compute_instance.vm :
-    {
-      "name" = vm.name
-      "id"   = vm.id
-      "fqdn" = vm.network_interface[0].nat_ip_address
-    }
-  ]
-
 }
 ```
 
-то при `terraform apply` получаем:
-
+применяем
 ```bash
-Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
-
-Outputs:
-
-main_and_replica = [
-  {
-    "fqdn" = "158.160.32.253"
-    "id" = "fhmh1d1vb668f0vdhhmp"
-    "name" = "main"
-  },
-  {
-    "fqdn" = "84.201.157.31"
-    "id" = "fhmga4c7p4oj14nn4ip5"
-    "name" = "replica"
-  },
-]
-web = [
-  {
-    "fqdn" = "158.160.97.205"
-    "id" = "fhm66e3e9hlf8t5kvh7h"
-    "name" = "web-1"
-  },
-  {
-    "fqdn" = "51.250.88.96"
-    "id" = "fhmq19ti54cu0ne5r6hk"
-    "name" = "web-2"
-  },
-]
+terraform apply
 ```
 
-
-чтобы вывести остальные 5-ую ВМ добавляем код:
-```bash
-output "web" {
-  value = [
-    for vm in yandex_compute_instance.platform :
-    {
-      "name" = vm.name
-      "id"   = vm.id
-      "fqdn" = vm.network_interface[0].nat_ip_address
-    }
-  ]
-
-}
-
-output "main_and_replica" {
-  value = [
-    for vm in yandex_compute_instance.vm :
-    {
-      "name" = vm.name
-      "id"   = vm.id
-      "fqdn" = vm.network_interface[0].nat_ip_address
-    }
-  ]
-
-}
-
-output "storage" {
-  value = [
-    for vm in yandex_compute_instance.storage :
-    {
-      "name" = vm.name
-      "id"   = vm.id
-      "fqdn" = vm.network_interface[0].nat_ip_address
-    }
-  ]
-
-}
-```
-
-Получаем ошибку:
-```bash
-
-│ Error: Unsupported attribute
-│ 
-│   on outputs.tf line 31, in output "storage":
-│   31:       "fqdn" = vm.network_interface[0].nat_ip_address
-│ 
-│ Can't access attributes on a list of objects. Did you mean to access an attribute for a specific element of the list, or across all elements of the list?
-```
-
-Не могу понять вы чем дело. 
-Все ВМ имеют одинаковые сетевые параметры:
-
-```bash
- network_interface {
-    subnet_id          = yandex_vpc_subnet.develop.id
-    nat                = true
-    security_group_ids = [yandex_vpc_security_group.example.id]
-  }
-  ```
-
-------
-
-### Задание 6* (необязательное)
-
-```
-еще не делал, т.к. не понятно как выполнять предидущие задания
-```
-
-#### 1. Используя null_resource и local-exec, примените ansible-playbook к ВМ из ansible inventory-файла.
-Готовый код возьмите из демонстрации к лекции [**demonstration2**](https://github.com/netology-code/ter-homeworks/tree/main/demonstration2).
 
 #### 2. Дополните файл шаблон hosts.tftpl. 
 Формат готового файла:
 ```netology-develop-platform-web-0   ansible_host="<внешний IP-address или внутренний IP-address если у ВМ отсутвует внешний адрес>"```
 
+теперь файл `hosts.rfrpl` выглядит так:
+```bash
+[webservers]
+
+%{~ for i in webservers ~}
+${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]} 
+
+%{~ endfor ~}
+
+[databases]
+
+%{~ for i in databases ~}
+${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]} 
+
+%{~ endfor ~}
+
+[storage]
+
+%{~ for i in storage ~}
+${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]} 
+
+%{~ endfor ~}
+
+netology-develop-platform-web-1   ansible_host="62.84.116.94"
+netology-develop-platform-web-2   ansible_host="51.250.13.209"
+netology-develop-databases-main   ansible_host="158.160.44.218"
+netology-develop-databases-replica   ansible_host="51.250.79.243"
+netology-develop-storage   ansible_host="62.84.124.81"
+
+
+```
+
+```bash
+terraform apply
+```
+
 Для проверки работы уберите у ВМ внешние адреса. Этот вариант используется при работе через bastion-сервер.
-Для зачёта предоставьте код вместе с основной частью задания.
 
+Тут не понятно, как убрать у виртуальной машины внешние адреса? Имеется ввиду что нужно удалить адреса в файле `hosts.tftpl` ? <br>
 
+Сделать файл таким? 
 
+```bash
+[webservers]
+
+%{~ for i in webservers ~}
+${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]} 
+
+%{~ endfor ~}
+
+[databases]
+
+%{~ for i in databases ~}
+${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]} 
+
+%{~ endfor ~}
+
+[storage]
+
+%{~ for i in storage ~}
+${i["name"]} ansible_host=${i["network_interface"][0]["nat_ip_address"]} 
+
+%{~ endfor ~}
+
+netology-develop-platform-web-1   ansible_host=""
+netology-develop-platform-web-2   ansible_host=""
+netology-develop-databases-main   ansible_host=""
+netology-develop-databases-replica   ansible_host=""
+netology-develop-storage   ansible_host=""
+
+```
+
+Но в этом случае какого эффекта я не вижу.
+Подскажите что делать в этом пункте.
