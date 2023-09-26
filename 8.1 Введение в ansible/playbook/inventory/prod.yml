@@ -1,0 +1,17 @@
+---
+  el:
+    hosts:
+      hw_8.1_centos7:
+        ansible_connection: docker
+  deb:
+    hosts:
+      hw_8_1_ubuntu:
+        ansible_connection: docker
+  local:
+    hosts:
+      localhost:
+        ansible_connection: local
+  fed:
+    hosts:
+      hw_8_1_fedora:
+        ansible_connection: docker

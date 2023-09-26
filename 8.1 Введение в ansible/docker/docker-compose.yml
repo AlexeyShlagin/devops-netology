@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  centos7:
+    image: centos:7
+    container_name: hw_8.1_centos7
+    tty: true
+    command: /bin/bash -c "yum -y update && yum -y install -y python3 && exec /bin/bash"
+
+  ubuntu:
+    image: ubuntu
+    container_name: hw_8_1_ubuntu
+    tty: true
+    command: /bin/bash -c "apt-get -y update && apt-get -y install -y python3 && exec /bin/bash"
+
+  fedora:
+    image: pycontribs/fedora
+    container_name: hw_8_1_fedora
+    tty: true
