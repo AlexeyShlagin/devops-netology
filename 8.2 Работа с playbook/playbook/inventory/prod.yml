@@ -1,0 +1,10 @@
+---
+clickhouse:
+  hosts:
+    hw_8_2_clickhouse:
+      ansible_connection: docker
+
+vector:
+  hosts:
+    hw_8_2_vector:
+      ansible_connection: docker

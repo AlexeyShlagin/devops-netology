@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  clickhouse:
+    image: centos:7
+    container_name: hw_8_2_clickhouse
+    tty: true
+    command: /bin/bash -c "yum -y update && yum -y install -y python3 && exec /bin/bash"
+
+  vector:
+    image: ubuntu
+    container_name: hw_8_2_vector
+    tty: true
+    command: /bin/bash -c "apt-get -y update && apt-get -y install -y python3 && exec /bin/bash"
