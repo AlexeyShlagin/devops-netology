@@ -2,124 +2,271 @@
 
 #### 1. Подготовьте свой inventory-файл `prod.yml`.
 
-`docker-compose.yml`
-```bash
-version: '3'
-
-services:
-  clickhouse:
-    image: ubuntu
-    container_name: hw_8_2_clickhouse
-    tty: true
-    command: /bin/bash -c "apt-get -y update && apt-get -y install -y python3 && exec /bin/bash"
-
-  vector:
-    image: ubuntu
-    container_name: hw_8_2_vector
-    tty: true
-    command: /bin/bash -c "apt-get -y update && apt-get -y install -y python3 && exec /bin/bash"
-
-```
 
 `prod.yml`
 ```bash
 ---
 clickhouse:
   hosts:
-    hw_8_2_ubuntu:
-      ansible_connection: docker
+    hw_8_2_clickhouse:
+      ansible_python_interpreter: /usr/bin/python2.7
+      #ansible_connection: docker
+      ansible_host: 158.160.99.7
+      ansible_user: ansible
+
+vector:
+  hosts:
+    hw_8_2_vector:
+      ansible_python_interpreter: /usr/bin/python3
+      ansible_host: 158.160.126.205
+      ansible_user: ansible
+      # ansible_connection: docker
+
+# Группируем дистрибутивы для удобства установки пакетов
+red_hat_based_distribs:
+  hosts:
+    hw_8_2_clickhouse:
+
+debian_based_distribs:
+  hosts:
+    hw_8_2_vector:
+
 ```
 
 #### 2. Допишите playbook: нужно сделать ещё один play, который устанавливает и настраивает [vector](https://vector.dev). Конфигурация vector должна деплоиться через template файл jinja2. От вас не требуется использовать все возможности шаблонизатора, просто вставьте стандартный конфиг в template файл. Информация по шаблонам по [ссылке](https://www.dmosk.ru/instruktions.php?object=ansible-nginx-install).
+
+```bash
+---
+
+# Устанавливаем корневые сертификаты
+  - name: CA certificates
+    hosts: all
+    tasks:
+      - name: Install CA
+        become: yes
+        ansible.builtin.package:
+          name: ca-certificates
+          state: latest
+
+# Устанавливаем clickhouse
+  - name: Install Clickhouse
+    hosts: clickhouse
+    
+    handlers:
+      - name: Restart clickhouse service
+        become: true
+        ansible.builtin.service:
+          name: clickhouse-server
+          state: restarted
+    
+    tasks:
+      # Скачиваем пакеты: клиент, сервер
+      - name: Get clickhouse client server distrib
+        ansible.builtin.get_url:
+          url: "https://packages.clickhouse.com/rpm/stable/{{ item }}-{{ clickhouse_version }}.noarch.rpm"
+          dest: "./{{ item }}-{{ clickhouse_version }}.rpm"
+        with_items: "{{ clickhouse_packages_client_server }}"
+
+      # Скачиваем common static, если нет в одном репозитории - берем в другом
+      - block:
+          - name: Get clickhouse common static noarch distrib
+            ansible.builtin.get_url:
+              url: "https://packages.clickhouse.com/rpm/stable/{{ item }}-{{ clickhouse_version }}.noarch.rpm"
+              dest: "./{{ item }}-{{ clickhouse_version }}.rpm"
+            with_items: "{{ clickhouse_packages_common_static }}"
+        rescue:    
+          - name: Get clickhouse common static x86_64 distrib
+            ansible.builtin.get_url:
+              url: "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-{{ clickhouse_version }}.x86_64.rpm"
+              dest: "./clickhouse-common-static-{{ clickhouse_version }}.rpm"
+      
+      # Устанавливаем пакеты
+      - name: Install clickhouse packages
+        become: true
+        ansible.builtin.yum:
+          name:
+            - "./clickhouse-common-static-{{ clickhouse_version }}.rpm"
+            - ./clickhouse-client-{{ clickhouse_version }}.rpm
+            - ./clickhouse-server-{{ clickhouse_version }}.rpm
+          state: present
+        #changed_when: true
+        
+        notify: Restart clickhouse service
+      - name: Flush handlers
+        meta: flush_handlers
+
+      - name: Create database
+        ansible.builtin.command: "clickhouse-client -q 'create database logs;'"
+        register: create_db
+        failed_when: create_db.rc != 0 and create_db.rc !=82
+        changed_when: create_db.rc == 0
+        
+# Устанавливаем vector      
+  - name: Installing Vector
+    hosts: vector
+    tasks:
+      - name: Get vector distrib
+        ansible.builtin.get_url:
+          url: "https://packages.timber.io/vector/{{ vector_version }}/vector_0.33.0-1_amd64.deb"        
+          dest: "./{{ vector_version }}_amd64.deb"
+      - name: Install package vector
+        become: true
+        ansible.builtin.apt:
+          deb: "./{{ vector_version }}_amd64.deb"
+          state: present
+
+      - name: Enable vector
+        become: true
+        ansible.builtin.shell: systemctl enable vector.service
+
+      - name: Start vector service
+        become: true
+        ansible.builtin.service:
+          name: vector.service
+          state: restarted           
+
+```
 
 #### 3. При создании tasks рекомендую использовать модули: `get_url`, `template`, `unarchive`, `file`.
 
 #### 4. Tasks должны: скачать дистрибутив нужной версии, выполнить распаковку в выбранную директорию, установить vector.
 
-при запуске playbook
-```bash
-ansible-playbook -i inventory/prod.yml site.yml --start-at-task 'Get vector distrib'
-```
-
-я получаю ошибку связанную с сертификатами:
-```bash
-TASK [Get vector distrib] **************************************************************************
-fatal: [hw_8_2_vector]: FAILED! => {"changed": false, "dest": "./0.33.0_amd64.deb", "elapsed": 1, "msg": "Request failed: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1007)>", "url": "https://packages.timber.io/vector/0.33.0/vector_0.33.0-1_amd64.deb"}
-```
-
-Я не понимаю почему происходит эта ошибка. Что то не то с корневыми сертификатами? Я пробовал установить сертификаты с помощью скрипта:
-
-```bash
-#!/bin/sh
-
-/Library/Frameworks/Python.framework/Versions/3.11/bin/python3.11 << "EOF"
-
-# install_certifi.py
-#
-# sample script to install or update a set of default Root Certificates
-# for the ssl module.  Uses the certificates provided by the certifi package:
-#       https://pypi.org/project/certifi/
-
-import os
-import os.path
-import ssl
-import stat
-import subprocess
-import sys
-
-STAT_0o775 = ( stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
-             | stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP
-             | stat.S_IROTH |                stat.S_IXOTH )
-
-def main():
-    openssl_dir, openssl_cafile = os.path.split(
-        ssl.get_default_verify_paths().openssl_cafile)
-
-    print(" -- pip install --upgrade certifi")
-    subprocess.check_call([sys.executable,
-        "-E", "-s", "-m", "pip", "install", "--upgrade", "certifi"])
-
-    import certifi
-
-    # change working directory to the default SSL directory
-    os.chdir(openssl_dir)
-    relpath_to_certifi_cafile = os.path.relpath(certifi.where())
-    print(" -- removing any existing file or link")
-    try:
-        os.remove(openssl_cafile)
-    except FileNotFoundError:
-        pass
-    print(" -- creating symlink to certifi certificate bundle")
-    os.symlink(relpath_to_certifi_cafile, openssl_cafile)
-    print(" -- setting permissions")
-    os.chmod(openssl_cafile, STAT_0o775)
-    print(" -- update complete")
-
-if __name__ == '__main__':
-    main()
-EOF
-```
-
-пробовал обновить сертификаты с помощью `brew`
-```bash
-  brew upgrade openssl
-  ```
-
-Можно отключить проверку, с помощью `validate_certs: no`, но проблему с сертификатами это не решит.
-
 #### 5. Запустите `ansible-lint site.yml` и исправьте ошибки, если они есть.
 
+```bash
+playbook git:(main) ✗ ansible-playbook -i inventory/prod.yml site.yml                                             
+
+PLAY [CA certificates] *********************************************************************************************************
+
+TASK [Gathering Facts] *********************************************************************************************************
+ok: [hw_8_2_vector]
+ok: [hw_8_2_clickhouse]
+
+TASK [Install CA] **************************************************************************************************************
+ok: [hw_8_2_clickhouse]
+ok: [hw_8_2_vector]
+
+PLAY [Install Clickhouse] ******************************************************************************************************
+
+TASK [Gathering Facts] *********************************************************************************************************
+ok: [hw_8_2_clickhouse]
+
+TASK [Get clickhouse client server distrib] ************************************************************************************
+ok: [hw_8_2_clickhouse] => (item=clickhouse-client)
+ok: [hw_8_2_clickhouse] => (item=clickhouse-server)
+
+TASK [Get clickhouse common static noarch distrib] *****************************************************************************
+failed: [hw_8_2_clickhouse] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "gid": 1000, "group": "ansible", "item": "clickhouse-common-static", "mode": "0664", "msg": "Request failed", "owner": "ansible", "response": "HTTP Error 404: Not Found", "secontext": "unconfined_u:object_r:user_home_t:s0", "size": 246310036, "state": "file", "status_code": 404, "uid": 1000, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
+
+TASK [Get clickhouse common static x86_64 distrib] *****************************************************************************
+ok: [hw_8_2_clickhouse]
+
+TASK [Install clickhouse packages] *********************************************************************************************
+ok: [hw_8_2_clickhouse]
+
+TASK [Flush handlers] **********************************************************************************************************
+
+TASK [Create database] *********************************************************************************************************
+ok: [hw_8_2_clickhouse]
+
+PLAY [Installing Vector] *******************************************************************************************************
+
+TASK [Gathering Facts] *********************************************************************************************************
+ok: [hw_8_2_vector]
+
+TASK [Get vector distrib] ******************************************************************************************************
+ok: [hw_8_2_vector]
+
+TASK [Install package vector] **************************************************************************************************
+ok: [hw_8_2_vector]
+
+TASK [Enable vector] ***********************************************************************************************************
+changed: [hw_8_2_vector]
+
+TASK [Start vector service] ****************************************************************************************************
+changed: [hw_8_2_vector]
+
+PLAY RECAP *********************************************************************************************************************
+hw_8_2_clickhouse          : ok=7    changed=0    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0   
+hw_8_2_vector              : ok=7    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+```
 
 #### 6. Попробуйте запустить playbook на этом окружении с флагом `--check`.
 
+```bash
+➜  playbook git:(main) ✗ ansible-playbook -i inventory/prod.yml site.yml --check
+
+PLAY [CA certificates] *****************************************************************************************************************************************************************
+
+TASK [Gathering Facts] *****************************************************************************************************************************************************************
+ok: [hw_8_2_clickhouse]
+ok: [hw_8_2_vector]
+
+TASK [Install CA] **********************************************************************************************************************************************************************
+ok: [hw_8_2_vector]
+ok: [hw_8_2_clickhouse]
+
+PLAY [Install Clickhouse] **************************************************************************************************************************************************************
+
+TASK [Gathering Facts] *****************************************************************************************************************************************************************
+ok: [hw_8_2_clickhouse]
+
+TASK [Get clickhouse client server distrib] ********************************************************************************************************************************************
+ok: [hw_8_2_clickhouse] => (item=clickhouse-client)
+ok: [hw_8_2_clickhouse] => (item=clickhouse-server)
+
+TASK [Get clickhouse common static noarch distrib] *************************************************************************************************************************************
+failed: [hw_8_2_clickhouse] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "gid": 1000, "group": "ansible", "item": "clickhouse-common-static", "mode": "0664", "msg": "Request failed", "owner": "ansible", "response": "HTTP Error 404: Not Found", "secontext": "unconfined_u:object_r:user_home_t:s0", "size": 246310036, "state": "file", "status_code": 404, "uid": 1000, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
+
+TASK [Get clickhouse common static x86_64 distrib] *************************************************************************************************************************************
+ok: [hw_8_2_clickhouse]
+
+TASK [Install clickhouse packages] *****************************************************************************************************************************************************
+ok: [hw_8_2_clickhouse]
+
+TASK [Flush handlers] ******************************************************************************************************************************************************************
+
+TASK [Create database] *****************************************************************************************************************************************************************
+skipping: [hw_8_2_clickhouse]
+
+PLAY [Installing Vector] ***************************************************************************************************************************************************************
+
+TASK [Gathering Facts] *****************************************************************************************************************************************************************
+ok: [hw_8_2_vector]
+
+TASK [Get vector distrib] **************************************************************************************************************************************************************
+ok: [hw_8_2_vector]
+
+TASK [Install package vector] **********************************************************************************************************************************************************
+ok: [hw_8_2_vector]
+
+TASK [Enable vector] *******************************************************************************************************************************************************************
+skipping: [hw_8_2_vector]
+
+TASK [Start vector service] ************************************************************************************************************************************************************
+changed: [hw_8_2_vector]
+
+PLAY RECAP *****************************************************************************************************************************************************************************
+hw_8_2_clickhouse          : ok=6    changed=0    unreachable=0    failed=0    skipped=1    rescued=1    ignored=0   
+hw_8_2_vector              : ok=6    changed=1    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0  
+```
 
 #### 7. Запустите playbook на `prod.yml` окружении с флагом `--diff`. Убедитесь, что изменения на системе произведены.
 
+```bash
+PLAY RECAP *****************************************************************************************************************************************************************************
+hw_8_2_clickhouse          : ok=7    changed=0    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0   
+hw_8_2_vector              : ok=7    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0  
+```
 
 #### 8. Повторно запустите playbook с флагом `--diff` и убедитесь, что playbook идемпотентен.
 
-
-#### 9. Подготовьте README.md-файл по своему playbook. В нём должно быть описано: что делает playbook, какие у него есть параметры и теги. Пример качественной документации ansible playbook по [ссылке](https://github.com/opensearch-project/ansible-playbook).
+```bash
+PLAY RECAP *****************************************************************************************************************************************************************************
+hw_8_2_clickhouse          : ok=7    changed=0    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0   
+hw_8_2_vector              : ok=7    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+```
 
 
 #### 10. Готовый playbook выложите в свой репозиторий, поставьте тег `08-ansible-02-playbook` на фиксирующий коммит, в ответ предоставьте ссылку на него.
