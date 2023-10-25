@@ -5,41 +5,45 @@
   hosts: all
   tasks:
     - name: Install CA
-      become: yes
+      become: true
       ansible.builtin.package:
-        name: ca-certificates
-        state: latest
+        name: ca-certificates=20230311ubuntu0.22*
+        state: present
 
 # Устанавливаем clickhouse
 - name: Install Clickhouse
-  hosts: clickhouse    
+  hosts: clickhouse
   handlers:
     - name: Restart clickhouse service
       become: true
       ansible.builtin.service:
         name: clickhouse-server
-        state: restarted    
+        state: restarted
   tasks:
     # Скачиваем пакеты: клиент, сервер
     - name: Get clickhouse client server distrib
       ansible.builtin.get_url:
         url: "https://packages.clickhouse.com/rpm/stable/{{ item }}-{{ clickhouse_version }}.noarch.rpm"
         dest: "./{{ item }}-{{ clickhouse_version }}.rpm"
+        mode: 644
       with_items: "{{ clickhouse_packages_client_server }}"
 
     # Скачиваем common static, если нет в одном репозитории - берем в другом
-    - block:
+    - name: Get clickhouse common distrib
+      block:
         - name: Get clickhouse common static noarch distrib
           ansible.builtin.get_url:
             url: "https://packages.clickhouse.com/rpm/stable/{{ item }}-{{ clickhouse_version }}.noarch.rpm"
             dest: "./{{ item }}-{{ clickhouse_version }}.rpm"
+            mode: 644
           with_items: "{{ clickhouse_packages_common_static }}"
-      rescue:    
+      rescue:
         - name: Get clickhouse common static x86_64 distrib
           ansible.builtin.get_url:
             url: "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-{{ clickhouse_version }}.x86_64.rpm"
             dest: "./clickhouse-common-static-{{ clickhouse_version }}.rpm"
-    
+            mode: 644
+
     # Устанавливаем пакеты
     - name: Install clickhouse packages
       become: true
@@ -50,25 +54,25 @@
           - ./clickhouse-server-{{ clickhouse_version }}.rpm
         state: present
       changed_when: true
-      
+
       notify: Restart clickhouse service
     - name: Flush handlers
-      meta: flush_handlers
+      ansible.builtin.meta: flush_handlers
 
     - name: Create database
       ansible.builtin.command: "clickhouse-client -q 'create database logs;'"
       register: create_db
-      failed_when: create_db.rc != 0 and create_db.rc !=82
+      failed_when: create_db.rc != 0 and create_db.rc != 82
       changed_when: create_db.rc == 0
-      
-# Устанавливаем vector      
+# Устанавливаем vector
 - name: Installing Vector
   hosts: vector
   tasks:
     - name: Get vector distrib
       ansible.builtin.get_url:
-        url: "https://packages.timber.io/vector/{{ vector_version }}/vector_0.33.0-1_amd64.deb"        
+        url: "https://packages.timber.io/vector/{{ vector_version }}/vector_0.33.0-1_amd64.deb"
         dest: "./{{ vector_version }}_amd64.deb"
+        mode: 644
     - name: Install package vector
       become: true
       ansible.builtin.apt:
@@ -77,45 +81,45 @@
 
     - name: Enable vector
       become: true
-      ansible.builtin.shell: systemctl enable vector.service
+      ansible.builtin.systemd:
+        name: vector.service
+        enabled: true
 
     - name: Start vector service
       become: true
       ansible.builtin.service:
         name: vector.service
-        state: restarted           
-
+        state: restarted
 # Устанаваливаем lighthouse
 - name: NGINX
   hosts: lighthouse
-  #gather_facts: no
   handlers:
     - name: Start nginx service
       become: true
       ansible.builtin.service:
         name: nginx
-        state: restarted         
+        state: restarted
   tasks:
     - name: Installing nginx
-      become: yes
+      become: true
       ansible.builtin.apt:
         name: nginx
         state: present
     - name: Copying lighthouse repo
-      become: yes
-      git:
+      become: true
+      ansible.builtin.git:
         repo: "{{ lighthouse_repo }}"
         dest: "{{ lighthouse_dest }}"
         version: master
     - name: Adding available site
-      become: yes
+      become: true
       ansible.builtin.template:
         src: ./templates/lighthouse.j2
         dest: /etc/nginx/sites-available/lighthouse
-        mode: 0644
+        mode: '644'
     - name: Create simlink lighthouse enable
-      become: yes
-      ansible.builtin.file: 
+      become: true
+      ansible.builtin.file:
         src: /etc/nginx/sites-available/lighthouse
         dest: /etc/nginx/sites-enabled/lighthouse
         state: link

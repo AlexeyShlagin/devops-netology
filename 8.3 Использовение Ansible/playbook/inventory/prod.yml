@@ -18,7 +18,7 @@ lighthouse:
   hosts:
     hw_8_2_lighthouse:
       ansible_python_interpreter: /usr/bin/python3
-      ansible_host: 51.250.11.74
+      ansible_host: 158.160.62.193
       ansible_user: ansible
 
 # Группируем дистрибутивы для удобства установки пакетов
