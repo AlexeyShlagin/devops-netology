@@ -230,4 +230,4 @@ hw_8_2_vector              : ok=7    changed=1    unreachable=0    failed=0    s
 
 #### 10. Готовый playbook выложите в свой репозиторий, поставьте тег 08-ansible-03-yandex на фиксирующий коммит, в ответ предоставьте ссылку на него
 
-
+[Github tag 08-ansible-03-yandex](https://github.com/AlexeyShlagin/devops-netology/releases/tag/08-ansible-03-yandex)
