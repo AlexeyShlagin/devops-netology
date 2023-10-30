@@ -3,3 +3,13 @@
   scm: git
   version: "1.13"
   name: clickhouse
+
+- src: git@github.com:AlexeyShlagin/devops-netology-vector-role.git
+  scm: git
+  version: "1.0.0"
+  name: vector-role
+
+- src: git@github.com:AlexeyShlagin/devops-netology-vector-role.git
+  scm: git
+  version: "1.0.0"
+  name: lighthouse-role

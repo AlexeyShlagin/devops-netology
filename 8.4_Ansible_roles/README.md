@@ -1,21 +1,5 @@
 # Домашнее задание к занятию 4 «Работа с roles»
 
-## Подготовка к выполнению
-
-1. * Необязательно. Познакомьтесь с [LightHouse](https://youtu.be/ymlrNlaHzIY?t=929).
-2. Создайте два пустых публичных репозитория в любом своём проекте: vector-role и lighthouse-role.
-3. Добавьте публичную часть своего ключа к своему профилю на GitHub.
-
-## Основная часть
-
-Ваша цель — разбить ваш playbook на отдельные roles. 
-
-Задача — сделать roles для ClickHouse, Vector и LightHouse и написать playbook для использования этих ролей. 
-
-Ожидаемый результат — существуют три ваших репозитория: два с roles и один с playbook.
-
-**Что нужно сделать**
-
 1. Создайте в старой версии playbook файл `requirements.yml` и заполните его содержимым:
 
    ```yaml
@@ -70,17 +54,27 @@ Starting galaxy role install process
 ```
 
 8. Выложите все roles в репозитории. Проставьте теги, используя семантическую нумерацию. Добавьте roles в `requirements.yml` в playbook.
+   
+```bash
+выполнено
+```   
 
 9.  Переработайте playbook на использование roles. Не забудьте про зависимости LightHouse и возможности совмещения `roles` с `tasks`.
 
+```bash
+выполнено
+```
+
 10. Выложите playbook в репозиторий.
+
+```bash
+выполнено
+```
 
 11. В ответе дайте ссылки на оба репозитория с roles и одну ссылку на репозиторий с playbook.
 
----
+[Vector role](https://github.com/AlexeyShlagin/devops-netology-vector-role.git)
 
-### Как оформить решение задания
+[Lighthouse role](https://github.com/AlexeyShlagin/devops-netology-lighthouse-role.git)
 
-Выполненное домашнее задание пришлите в виде ссылки на .md-файл в вашем репозитории.
-
----
+[Playbook](https://github.com/AlexeyShlagin/devops-netology/tree/main/8.4_Ansible_roles)
