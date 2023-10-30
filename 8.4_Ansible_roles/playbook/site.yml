@@ -1,0 +1,83 @@
+---
+
+# Устанавливаем корневые сертификаты
+- name: CA certificates
+  hosts: all
+  tasks:
+    - name: Install CA
+      become: true
+      ansible.builtin.package:
+        name: ca-certificates=20230311ubuntu0.22*
+        state: present
+
+# Устанавливаем clickhouse
+- name: Install Clickhouse
+  hosts: clickhouse
+  roles:
+    - role: clickhouse
+
+  # handlers:
+  #   - name: Restart clickhouse service
+  #     become: true
+  #     ansible.builtin.service:
+  #       name: clickhouse-server
+  #       state: restarted
+  # tasks:
+  #   # Скачиваем пакеты: клиент, сервер
+  #   - name: Get clickhouse client server distrib
+  #     ansible.builtin.get_url:
+  #       url: "https://packages.clickhouse.com/rpm/stable/{{ item }}-{{ clickhouse_version }}.noarch.rpm"
+  #       dest: "./{{ item }}-{{ clickhouse_version }}.rpm"
+  #       mode: 644
+  #     with_items: "{{ clickhouse_packages_client_server }}"
+
+  #   # Скачиваем common static, если нет в одном репозитории - берем в другом
+  #   - name: Get clickhouse common distrib
+  #     block:
+  #       - name: Get clickhouse common static noarch distrib
+  #         ansible.builtin.get_url:
+  #           url: "https://packages.clickhouse.com/rpm/stable/{{ item }}-{{ clickhouse_version }}.noarch.rpm"
+  #           dest: "./{{ item }}-{{ clickhouse_version }}.rpm"
+  #           mode: 644
+  #         with_items: "{{ clickhouse_packages_common_static }}"
+  #     rescue:
+  #       - name: Get clickhouse common static x86_64 distrib
+  #         ansible.builtin.get_url:
+  #           url: "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-{{ clickhouse_version }}.x86_64.rpm"
+  #           dest: "./clickhouse-common-static-{{ clickhouse_version }}.rpm"
+  #           mode: 644
+
+  #   # Устанавливаем пакеты
+  #   - name: Install clickhouse packages
+  #     become: true
+  #     ansible.builtin.yum:
+  #       name:
+  #         - "./clickhouse-common-static-{{ clickhouse_version }}.rpm"
+  #         - ./clickhouse-client-{{ clickhouse_version }}.rpm
+  #         - ./clickhouse-server-{{ clickhouse_version }}.rpm
+  #       state: present
+  #     changed_when: true
+
+  #     notify: Restart clickhouse service
+  #   - name: Flush handlers
+  #     ansible.builtin.meta: flush_handlers
+
+  #   - name: Create database
+  #     ansible.builtin.command: "clickhouse-client -q 'create database logs;'"
+  #     register: create_db
+  #     failed_when: create_db.rc != 0 and create_db.rc != 82
+  #     changed_when: create_db.rc == 0
+
+
+# Устанавливаем vector
+- name: Installing Vector
+  hosts: vector
+  roles:
+    - role: vector-role    
+
+# Устанаваливаем lighthouse
+- name: Installing lighthouse
+  hosts: lighthouse
+  roles:
+    - role: lighthouse-role
+  
