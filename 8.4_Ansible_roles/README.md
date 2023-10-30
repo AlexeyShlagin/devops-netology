@@ -77,4 +77,4 @@ Starting galaxy role install process
 
 [Lighthouse role](https://github.com/AlexeyShlagin/devops-netology-lighthouse-role.git)
 
-[Playbook](https://github.com/AlexeyShlagin/devops-netology/tree/main/8.4_Ansible_roles)
+[Playbook](https://github.com/AlexeyShlagin/devops-netology/tree/main/8.4_Ansible_roles/playbook)
