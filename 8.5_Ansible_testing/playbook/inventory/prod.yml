@@ -1,0 +1,36 @@
+---
+clickhouse:
+  hosts:
+    hw_8_2_clickhouse:
+      ansible_python_interpreter: /usr/bin/python2.7
+      #ansible_connection: docker
+      ansible_host: 158.160.111.238
+      ansible_user: ansible
+
+vector:
+  hosts:
+    hw_8_2_vector:
+      ansible_python_interpreter: /usr/bin/python3
+      ansible_host: 158.160.115.210
+      ansible_user: ansible
+
+lighthouse:
+  hosts:
+    hw_8_2_lighthouse:
+      ansible_python_interpreter: /usr/bin/python3
+      ansible_host: 158.160.63.25
+      ansible_user: ansible
+
+# Группируем дистрибутивы для удобства установки пакетов
+red_hat_based_distribs:
+  hosts:
+    hw_8_2_clickhouse:
+
+debian_based_distribs:
+  hosts:
+    hw_8_2_vector:
+    hw_8_2_lighthouse:
+
+all:
+  vars:
+    ansible_ssh_extra_args: "-o StrictHostKeyChecking=no"
