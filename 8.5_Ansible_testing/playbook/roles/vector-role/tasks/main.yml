@@ -1,15 +1,41 @@
 ---
 # tasks file for vector-role
-- name: Get vector distrib
-  ansible.builtin.get_url:
-    url: "https://packages.timber.io/vector/{{ vector_version }}/vector_0.33.0-1_amd64.deb"
-    dest: "./{{ vector_version }}_amd64.deb"
-    mode: 644
-- name: Install package vector
-  become: true
-  ansible.builtin.apt:
-    deb: "./{{ vector_version }}_amd64.deb"
+
+- name: Install Python3 using raw module
+  raw: apt-get install -y python3
+
+- name: Install sudo for CentOS (if not installed)
+  yum:
+    name: sudo
     state: present
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Get vector distrib for Debian/Ubuntu
+  ansible.builtin.get_url:
+    url: "https://packages.timber.io/vector/{{ vector_version }}/vector_{{ vector_version }}-1_amd64.deb"
+    dest: "/tmp/vector_{{ vector_version }}_amd64.deb"
+    mode: 644
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Install vector package on Debian/Ubuntu
+  apt:
+    deb: "/tmp/vector_{{ vector_version }}_amd64.deb"
+  when: ansible_facts['os_family'] == "Debian"
+  become: true
+
+- name: Get vector distrib for RedHat/CentOS
+  ansible.builtin.get_url:
+    url: "https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-1.x86_64.rpm"
+    dest: "/tmp/vector-{{ vector_version }}.x86_64.rpm"
+    mode: 644
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Install vector package on RedHat/CentOS
+  yum:
+    name: "/tmp/vector-{{ vector_version }}.x86_64.rpm"
+    state: present
+  when: ansible_facts['os_family'] == "RedHat"
+  become: true
 
 - name: Enable vector
   become: true

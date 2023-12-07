@@ -4,21 +4,21 @@ clickhouse:
     hw_8_2_clickhouse:
       ansible_python_interpreter: /usr/bin/python2.7
       #ansible_connection: docker
-      ansible_host: 158.160.111.238
+      ansible_host: 158.160.113.186
       ansible_user: ansible
 
 vector:
   hosts:
     hw_8_2_vector:
       ansible_python_interpreter: /usr/bin/python3
-      ansible_host: 158.160.115.210
+      ansible_host: 158.160.123.114
       ansible_user: ansible
 
 lighthouse:
   hosts:
     hw_8_2_lighthouse:
       ansible_python_interpreter: /usr/bin/python3
-      ansible_host: 158.160.63.25
+      ansible_host: 158.160.123.196
       ansible_user: ansible
 
 # Группируем дистрибутивы для удобства установки пакетов
