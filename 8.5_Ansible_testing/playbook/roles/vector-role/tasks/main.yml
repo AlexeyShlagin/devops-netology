@@ -1,8 +1,8 @@
 ---
 # tasks file for vector-role
 
-- name: Install Python3 using raw module
-  raw: apt-get install -y python3
+#- name: Install Python3 using raw module
+#  raw: apt-get install -y python3
 
 - name: Install sudo for CentOS (if not installed)
   yum:
