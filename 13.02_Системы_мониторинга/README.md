@@ -185,22 +185,21 @@ services:
       - "8089:8089/udp"
 
   telegraf:
-    # Full tag list: https://hub.docker.com/r/library/telegraf/tags/
     build:
       context: ./images/telegraf/
       dockerfile: ./${TYPE}/Dockerfile
       args:
         TELEGRAF_TAG: ${TELEGRAF_TAG}
-    image: "telegraf:1.4.0"
+    image: "telegraf"
     privileged: true
+    user: telegraf:1
     environment:
       HOSTNAME: "telegraf-getting-started"
     links:
       - influxdb
     volumes:
-      - ./telegraf/:/etc/telegraf/
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./etc/:/etc/telegraf/:Z
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:Z
+      - /var/run/docker.sock:/var/run/docker.sock:Z
     depends_on:
       - influxdb
     ports:
@@ -261,6 +260,75 @@ services:
 
 ```
 
-Но метрики связанные с docker не появились
+Но метрики связанные с docker не появились. 
 
-![](img/3.png)
+все контейнеры работают
+
+```bash
+> docker ps -a
+CONTAINER ID   IMAGE                   COMMAND                  CREATED          STATUS          PORTS                                                                    NAMES
+62c91c4abed3   chrono_config           "/entrypoint.sh chro…"   34 minutes ago   Up 34 minutes   0.0.0.0:8888->8888/tcp                                                   sandbox-chronograf-1
+8156f139d6f6   telegraf                "/entrypoint.sh tele…"   34 minutes ago   Up 34 minutes   0.0.0.0:8092->8092/udp, 0.0.0.0:8125->8125/udp, 0.0.0.0:8094->8094/tcp   sandbox-telegraf-1
+c915353b69c9   kapacitor               "/entrypoint.sh kapa…"   34 minutes ago   Up 34 minutes   0.0.0.0:9092->9092/tcp                                                   sandbox-kapacitor-1
+ad5145aa998c   influxdb                "/entrypoint.sh infl…"   34 minutes ago   Up 34 minutes   0.0.0.0:8082->8082/tcp, 0.0.0.0:8086->8086/tcp, 0.0.0.0:8089->8089/udp   sandbox-influxdb-1
+e45c2df35136   sandbox-documentation   "/documentation/docu…"   34 minutes ago   Up 34 minutes   0.0.0.0:3010->3000/tcp                                                   sandbox-documentation-1                                     sandbox-documentation-1
+```
+
+доступ на чтение есть
+```bash
+> ll /var/run/docker.sock
+lrwxr-xr-x  1 root  daemon    38B Dec 20 20:37 /var/run/docker.sock -> /Users/shlagin/.docker/run/docker.sock
+```
+
+в контейнере файл также есть
+
+```
+root@266b36937d44:/# ls -lah /var/run/docker.sock
+srwxr-xr-x 1 root root 0 Dec 23 06:47 /var/run/docker.sock
+```
+
+Проверяю числовой идентификатор группы, которой принадлежит файл сокета Docker 
+
+```bash
+> stat -f '%g' /var/run/docker.sock
+1
+```
+
+в docker-compose.yml указываю 
+
+```
+user: telegraf:1
+```
+
+Тем не менее, при подключению к контейнеру telegraf наблюдаются ошибки с доступом
+
+```bash
+2023-12-26T09:17:10Z E! [inputs.docker] Error in plugin: permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get "http://%2Fvar%2Frun%2Fdocker.sock/v1.24/info": dial unix /var/run/docker.sock: connect: permission denied
+2023-12-26T09:17:10Z E! [inputs.docker] Error in plugin: permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get "http://%2Fvar%2Frun%2Fdocker.sock/v1.24/containers/json?filters=%7B%22status%22%3A%7B%22running%22%3Atrue%7D%7D": dial unix /var/run/docker.sock: connect: permission denied
+```
+
+Внутри контейнера файл docker.sock есть, т.е. подключение "файла" происходит.
+
+```bash
+docker exec -it 8156f139d6f6 /bin/bash
+
+telegraf@8156f139d6f6:/$ ls -lah /var/run/
+total 12K
+drwxr-xr-x 1 root root 4.0K Dec 26 09:17 .
+drwxr-xr-x 1 root root 4.0K Dec 26 09:17 ..
+srwxr-xr-x 1 root root    0 Dec 25 10:15 docker.sock
+drwxrwxrwt 2 root root 4.0K Dec 18 00:00 lock
+
+```
+
+### У вас  есть предположение в чем ошибка? <br>
+
+Я пробовал запустить TICK стэк на ubuntu, но:
+* virual box beta работает на m3 
+* UTM запускает ubuntu, но возникает проблема с поднятием TICK стэка, что то с виртуальными интерфейсами
+
+Получилось запустить виртуальную машину parallels, там после изменения на нужный ID группы метрики docker появились:
+
+![](img/4.png)
+
+Почему не получается сделать на mac os - не знаю.
