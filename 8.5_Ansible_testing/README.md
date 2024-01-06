@@ -406,26 +406,163 @@ localhost                  : ok=2    changed=2    unreachable=0    failed=0    s
 
 #### 1. Добавьте в директорию с vector-role файлы из [директории](./example).
 
+```
+выполнено
+```
+
 #### 2. Запустите `docker run --privileged=True -v <path_to_repo>:/opt/vector-role -w /opt/vector-role -it aragast/netology:latest /bin/bash`, где path_to_repo — путь до корня репозитория с vector-role на вашей файловой системе.
+
+
 
 #### 3. Внутри контейнера выполните команду `tox`, посмотрите на вывод.
 
+```bash
+[root@9151de304472 vector-role]# tox
+py37-ansible210 create: /opt/vector-role/.tox/py37-ansible210
+py37-ansible210 installdeps: -rtox-requirements.txt, ansible<3.0
+py37-ansible210 installed: ansible==2.10.7,ansible-base==2.10.17,ansible-compat==1.0.0,ansible-lint==5.1.3,arrow==1.2.3,bcrypt==4.1.2,binaryornot==0.4.4,bracex==2.3.post1,cached-property==1.5.2,Cerberus==1.3.5,certifi==2023.11.17,cffi==1.15.1,chardet==5.2.0,charset-normalizer==3.3.2,click==8.1.7,click-help-colors==0.9.4,cookiecutter==2.5.0,cryptography==41.0.7,distro==1.9.0,enrich==1.2.7,idna==3.6,importlib-metadata==6.7.0,Jinja2==3.1.2,jmespath==1.0.1,lxml==5.0.1,markdown-it-py==2.2.0,MarkupSafe==2.1.3,mdurl==0.1.2,molecule==3.5.2,molecule-podman==1.1.0,packaging==23.2,paramiko==2.12.0,pathspec==0.11.2,pluggy==1.2.0,pycparser==2.21,Pygments==2.17.2,PyNaCl==1.5.0,python-dateutil==2.8.2,python-slugify==8.0.1,PyYAML==5.4.1,requests==2.31.0,rich==13.7.0,ruamel.yaml==0.18.5,ruamel.yaml.clib==0.2.8,selinux==0.2.1,six==1.16.0,subprocess-tee==0.3.5,tenacity==8.2.3,text-unidecode==1.3,typing_extensions==4.7.1,urllib3==2.0.7,wcmatch==8.4.1,yamllint==1.26.3,zipp==3.15.0
+py37-ansible210 run-test-pre: PYTHONHASHSEED='157061826'
+py37-ansible210 run-test: commands[0] | molecule test -s compatibility --destroy always
+CRITICAL 'molecule/compatibility/molecule.yml' glob failed.  Exiting.
+ERROR: InvocationError for command /opt/vector-role/.tox/py37-ansible210/bin/molecule test -s compatibility --destroy always (exited with code 1)
+```
+
 #### 4. Создайте облегчённый сценарий для `molecule` с драйвером `molecule_podman`. Проверьте его на исполнимость.
+
+```bash
+molecule init scenario --driver-name podman
+```
 
 #### 5. Пропишите правильную команду в `tox.ini`, чтобы запускался облегчённый сценарий.
 
+Изменил имя сценария на `default`
+
+```bash
+[tox]
+minversion = 1.8
+basepython = python3.6
+envlist = py{37,39}-ansible{210,30}
+skipsdist = true
+
+[testenv]
+passenv = *
+deps =
+    -r tox-requirements.txt
+    ansible210: ansible<3.0
+    ansible30: ansible<3.1
+commands =
+    {posargs:molecule test -s default --destroy always}
+```
+
 #### 6. Запустите команду `tox`. Убедитесь, что всё отработало успешно.
 
-#### 7. Добавьте новый тег на коммит с рабочим сценарием в соответствии с семантическим версионированием.
+```bash
+[root@9151de304472 vector-role]# tox
+py37-ansible210 installed: ansible==2.10.7,ansible-base==2.10.17,ansible-compat==1.0.0,ansible-lint==5.1.3,arrow==1.2.3,bcrypt==4.1.2,binaryornot==0.4.4,bracex==2.3.post1,cached-property==1.5.2,Cerberus==1.3.5,certifi==2023.11.17,cffi==1.15.1,chardet==5.2.0,charset-normalizer==3.3.2,click==8.1.7,click-help-colors==0.9.4,cookiecutter==2.5.0,cryptography==41.0.7,distro==1.9.0,enrich==1.2.7,idna==3.6,importlib-metadata==6.7.0,Jinja2==3.1.2,jmespath==1.0.1,lxml==5.0.1,markdown-it-py==2.2.0,MarkupSafe==2.1.3,mdurl==0.1.2,molecule==3.5.2,molecule-podman==1.1.0,packaging==23.2,paramiko==2.12.0,pathspec==0.11.2,pluggy==1.2.0,pycparser==2.21,Pygments==2.17.2,PyNaCl==1.5.0,python-dateutil==2.8.2,python-slugify==8.0.1,PyYAML==5.4.1,requests==2.31.0,rich==13.7.0,ruamel.yaml==0.18.5,ruamel.yaml.clib==0.2.8,selinux==0.2.1,six==1.16.0,subprocess-tee==0.3.5,tenacity==8.2.3,text-unidecode==1.3,typing_extensions==4.7.1,urllib3==2.0.7,wcmatch==8.4.1,yamllint==1.26.3,zipp==3.15.0
+py37-ansible210 run-test-pre: PYTHONHASHSEED='2580881368'
+py37-ansible210 run-test: commands[0] | molecule test -s default --destroy always
+INFO     default scenario test matrix: dependency, lint, cleanup, destroy, syntax, create, prepare, converge, idempotence, side_effect, verify, cleanup, destroy
+INFO     Performing prerun...
+INFO     Set ANSIBLE_LIBRARY=/root/.cache/ansible-compat/b984a4/modules:/root/.ansible/plugins/modules:/usr/share/ansible/plugins/modules
+INFO     Set ANSIBLE_COLLECTIONS_PATH=/root/.cache/ansible-compat/b984a4/collections:/root/.ansible/collections:/usr/share/ansible/collections
+INFO     Set ANSIBLE_ROLES_PATH=/root/.cache/ansible-compat/b984a4/roles:/root/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles
+INFO     Running default > dependency
+WARNING  Skipping, missing the requirements file.
+WARNING  Skipping, missing the requirements file.
+INFO     Running default > lint
+INFO     Lint is disabled.
+INFO     Running default > cleanup
+WARNING  Skipping, cleanup playbook not configured.
+INFO     Running default > destroy
+INFO     Sanity checks: 'podman'
 
-После выполнения у вас должно получится два сценария molecule и один tox.ini файл в репозитории. Не забудьте указать в ответе теги решений Tox и Molecule заданий. В качестве решения пришлите ссылку на  ваш репозиторий и скриншоты этапов выполнения задания. 
+PLAY [Destroy] *****************************************************************
 
-## Необязательная часть
+TASK [Destroy molecule instance(s)] ********************************************
+changed: [localhost] => (item={'image': 'quay.io/centos/centos:stream8', 'name': 'instance', 'pre_build_image': True})
 
-1. Проделайте схожие манипуляции для создания роли LightHouse.
-2. Создайте сценарий внутри любой из своих ролей, который умеет поднимать весь стек при помощи всех ролей.
-3. Убедитесь в работоспособности своего стека. Создайте отдельный verify.yml, который будет проверять работоспособность интеграции всех инструментов между ними.
-4. Выложите свои roles в репозитории.
+TASK [Wait for instance(s) deletion to complete] *******************************
+changed: [localhost] => (item={'started': 1, 'finished': 0, 'ansible_job_id': '610285168638.7046', 'results_file': '/root/.ansible_async/610285168638.7046', 'changed': True, 'failed': False, 'item': {'image': 'quay.io/centos/centos:stream8', 'name': 'instance', 'pre_build_image': True}, 'ansible_loop_var': 'item'})
 
-В качестве решения пришлите ссылки и скриншоты этапов выполнения задания.
+PLAY RECAP *********************************************************************
+localhost                  : ok=2    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
+INFO     Running default > syntax
+
+playbook: /opt/vector-role/molecule/default/converge.yml
+INFO     Running default > create
+
+PLAY [Create] ******************************************************************
+
+TASK [get podman executable path] **********************************************
+ok: [localhost]
+
+TASK [save path to executable as fact] *****************************************
+ok: [localhost]
+
+TASK [Log into a container registry] *******************************************
+skipping: [localhost] => (item="instance registry username: None specified") 
+
+TASK [Check presence of custom Dockerfiles] ************************************
+ok: [localhost] => (item=Dockerfile: None specified)
+
+TASK [Create Dockerfiles from image names] *************************************
+skipping: [localhost] => (item="Dockerfile: None specified; Image: quay.io/centos/centos:stream8") 
+
+TASK [Discover local Podman images] ********************************************
+ok: [localhost] => (item=instance)
+
+TASK [Build an Ansible compatible image] ***************************************
+skipping: [localhost] => (item=quay.io/centos/centos:stream8) 
+
+TASK [Determine the CMD directives] ********************************************
+ok: [localhost] => (item="instance command: None specified")
+
+TASK [Remove possible pre-existing containers] *********************************
+changed: [localhost]
+
+TASK [Discover local podman networks] ******************************************
+skipping: [localhost] => (item=instance: None specified) 
+
+TASK [Create podman network dedicated to this scenario] ************************
+skipping: [localhost]
+
+TASK [Create molecule instance(s)] *********************************************
+changed: [localhost] => (item=instance)
+
+TASK [Wait for instance(s) creation to complete] *******************************
+FAILED - RETRYING: Wait for instance(s) creation to complete (300 retries left).
+FAILED - RETRYING: Wait for instance(s) creation to complete (299 retries left).
+FAILED - RETRYING: Wait for instance(s) creation to complete (298 retries left).
+FAILED - RETRYING: Wait for instance(s) creation to complete (297 retries left).
+failed: [localhost] (item=instance) => {"ansible_job_id": "845462762983.7508", "ansible_loop_var": "item", "attempts": 5, "changed": true, "cmd": ["/usr/bin/podman", "run", "-d", "--name", "instance", "--hostname=instance", "quay.io/centos/centos:stream8", "bash", "-c", "while true; do sleep 10000; done"], "delta": "0:00:22.681944", "end": "2024-01-06 15:59:52.934228", "finished": 1, "item": {"ansible_job_id": "845462762983.7508", "ansible_loop_var": "item", "changed": true, "failed": false, "finished": 0, "item": {"image": "quay.io/centos/centos:stream8", "name": "instance", "pre_build_image": true}, "results_file": "/root/.ansible_async/845462762983.7508", "started": 1}, "msg": "non-zero return code", "rc": 125, "start": "2024-01-06 15:59:30.252284", "stderr": "Trying to pull quay.io/centos/centos:stream8...\nGetting image source signatures\nCopying blob sha256:6c507150f7e9f028ef978d633e702dab944bbda82bfbc46f6307495cf6dd9fc7\nCopying blob sha256:6c507150f7e9f028ef978d633e702dab944bbda82bfbc46f6307495cf6dd9fc7\nError: writing blob: adding layer with blob \"sha256:6c507150f7e9f028ef978d633e702dab944bbda82bfbc46f6307495cf6dd9fc7\": Error processing tar file(exit status 1): ", "stderr_lines": ["Trying to pull quay.io/centos/centos:stream8...", "Getting image source signatures", "Copying blob sha256:6c507150f7e9f028ef978d633e702dab944bbda82bfbc46f6307495cf6dd9fc7", "Copying blob sha256:6c507150f7e9f028ef978d633e702dab944bbda82bfbc46f6307495cf6dd9fc7", "Error: writing blob: adding layer with blob \"sha256:6c507150f7e9f028ef978d633e702dab944bbda82bfbc46f6307495cf6dd9fc7\": Error processing tar file(exit status 1): "], "stdout": "", "stdout_lines": []}
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=7    changed=2    unreachable=0    failed=1    skipped=5    rescued=0    ignored=0
+
+CRITICAL Ansible return code was 2, command was: ['ansible-playbook', '--inventory', '/root/.cache/molecule/vector-role/default/inventory', '--skip-tags', 'molecule-notest,notest', '/opt/vector-role/.tox/py37-ansible210/lib/python3.7/site-packages/molecule_podman/playbooks/create.yml']
+WARNING  An error occurred during the test sequence action: 'create'. Cleaning up.
+INFO     Running default > cleanup
+WARNING  Skipping, cleanup playbook not configured.
+INFO     Running default > destroy
+
+PLAY [Destroy] *****************************************************************
+
+TASK [Destroy molecule instance(s)] ********************************************
+changed: [localhost] => (item={'image': 'quay.io/centos/centos:stream8', 'name': 'instance', 'pre_build_image': True})
+
+TASK [Wait for instance(s) deletion to complete] *******************************
+changed: [localhost] => (item={'started': 1, 'finished': 0, 'ansible_job_id': '248019648282.7885', 'results_file': '/root/.ansible_async/248019648282.7885', 'changed': True, 'failed': False, 'item': {'image': 'quay.io/centos/centos:stream8', 'name': 'instance', 'pre_build_image': True}, 'ansible_loop_var': 'item'})
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=2    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
+INFO     Pruning extra files from scenario ephemeral directory
+ERROR: InvocationError for command /opt/vector-role/.tox/py37-ansible210/bin/molecule test -s default --destroy always (exited with code 1)
+
+```
+
+
+
+
 
