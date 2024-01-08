@@ -96,7 +96,7 @@ Switched to a new branch 'feature/add_reply'
 10. Напишите новый метод для класса Welcomer: метод должен возвращать произвольную реплику, содержащую слово `hunter`.
 
 ```bash
-Рpackage plaindoll;
+package plaindoll;
 
 public class Welcomer{
 	public String sayWelcome() {
@@ -112,7 +112,7 @@ public class Welcomer{
 		return "something in the way";
 	}
 	public String sayHunter(){
-		return "Good evening my darling. How can i get to the library?";
+		return "Good evening hunter. How can i get to the library?";
 	}
 }
 
