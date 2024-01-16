@@ -188,7 +188,7 @@ INFO: Mac OS X 13.6 x86_64
 ```bash
 bin mvn -v
 Apache Maven 3.9.5 (57804ffe001d7215b5e7bcb531cf83df38f93546)
-Maven home: /Users/shlagin/Software/apache-maven-3.9.5
+Maven home: /Users/shl/Software/apache-maven-3.9.5
 Java version: 1.8.0_391, vendor: Oracle Corporation, runtime: /Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home
 Default locale: en_KZ, platform encoding: UTF-8
 OS name: "mac os x", version: "13.6", arch: "x86_64", family: "mac"
@@ -218,14 +218,14 @@ OS name: "mac os x", version: "13.6", arch: "x86_64", family: "mac"
 [INFO] 
 [INFO] --- resources:3.3.1:resources (default-resources) @ simple-app ---
 [WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
-[INFO] skip non existing resourceDirectory /Users/shlagin/Documents/DevOps-netology/homeweork-devops-netology/9.3_CI_CD/mvn/src/main/resources
+[INFO] skip non existing resourceDirectory /Users/shl/Documents/DevOps-netology/homeweork-devops-netology/9.3_CI_CD/mvn/src/main/resources
 [INFO] 
 [INFO] --- compiler:3.11.0:compile (default-compile) @ simple-app ---
 [INFO] No sources to compile
 [INFO] 
 [INFO] --- resources:3.3.1:testResources (default-testResources) @ simple-app ---
 [WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
-[INFO] skip non existing resourceDirectory /Users/shlagin/Documents/DevOps-netology/homeweork-devops-netology/9.3_CI_CD/mvn/src/test/resources
+[INFO] skip non existing resourceDirectory /Users/shl/Documents/DevOps-netology/homeweork-devops-netology/9.3_CI_CD/mvn/src/test/resources
 [INFO] 
 [INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ simple-app ---
 [INFO] No sources to compile
@@ -248,9 +248,9 @@ OS name: "mac os x", version: "13.6", arch: "x86_64", family: "mac"
 ```bash
 ls -lah ~/.m2/repository/netology/java/
 total 0
-drwxr-xr-x@ 3 shlagin  staff    96B Nov 13 21:26 .
-drwxr-xr-x@ 3 shlagin  staff    96B Nov 13 21:26 ..
-drwxr-xr-x@ 6 shlagin  staff   192B Nov 13 21:26 8_282
+drwxr-xr-x@ 3 shl  staff    96B Nov 13 21:26 .
+drwxr-xr-x@ 3 shl  staff    96B Nov 13 21:26 ..
+drwxr-xr-x@ 6 shl  staff   192B Nov 13 21:26 8_282
 ```
 
 4. В ответе пришлите исправленный файл `pom.xml`.
